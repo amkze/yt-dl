@@ -90,7 +90,14 @@ func main() {
 // formatSelector builds a yt-dlp format string that tries the chosen
 // quality first, then 1080p, then 720p, then 480p, then 360p,
 // and finally falls back to the best available stream.
+// If "best" is chosen, the highest available quality is downloaded.
 func formatSelector(q string) string {
+	// "best" downloads the highest quality available
+	if q == "best" {
+		return "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
+	}
+
+	// For specific resolutions: build fallback chain
 	heights := []string{q, "1080", "720", "480", "360"}
 
 	// Deduplicate while preserving order
