@@ -80,23 +80,33 @@ func main() {
 	fmt.Printf("Successfully created: %s\n", zipPath)
 }
 
-// formatSelector returns a yt-dlp format string with fallback logic.
+// formatSelector builds a yt-dlp format string that tries the chosen
 func formatSelector(q string) string {
-	switch q {
-	case "1080":
-		// Prefer best video up to 1080p + best audio, otherwise best overall
-		return "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
-	case "720":
-		// Try up to 720p, fallback to 1080p, then best
-		return "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
-	case "480":
-		return "bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
-	case "360":
-		return "bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
-	default:
-		// Unknown quality → default to 1080 logic
-		return "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
+	// Preferred order, including the primary choice
+	heights := []string{q, "1080", "720", "480", "360"}
+
+	// Deduplicate while preserving order
+	seen := make(map[string]bool)
+	unique := make([]string, 0, len(heights))
+	for _, h := range heights {
+		if !seen[h] {
+			seen[h] = true
+			unique = append(unique, h)
+		}
 	}
+
+	// Build fallback chain: for each resolution, request best video ≤ that height + best audio
+	var parts []string
+	for _, h := range unique {
+		parts = append(parts,
+			fmt.Sprintf("bestvideo[height<=%s][ext=mp4]+bestaudio[ext=m4a]", h))
+	}
+
+	// Final fallback: best mp4 with audio, then best of anything
+	finalFallback := "best[ext=mp4]/best"
+	chain := append(parts, finalFallback)
+
+	return strings.Join(chain, "/")
 }
 
 // createZip creates a zip file at zipPath containing the file sourcePath.
