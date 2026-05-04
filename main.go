@@ -33,6 +33,12 @@ func main() {
 		"-o", "%(title).100s [%(id)s].%(ext)s",
 		"--no-mtime",
 	}
+
+	// Use SOCKS5 proxy if provided (e.g., WARP bypass)
+	if proxyAddr := os.Getenv("PROXY_ADDRESS"); proxyAddr != "" {
+		args = append(args, "--proxy", proxyAddr)
+	}
+
 	if cookiesFile != "" {
 		args = append(args, "--cookies", cookiesFile)
 	}
