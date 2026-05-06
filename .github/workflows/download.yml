@@ -7,27 +7,12 @@ on:
         description: 'YouTube video URL'
         required: true
         type: string
-      quality:
-        description: 'Preferred video quality'
-        required: true
-        type: choice
-        default: '1080'
-        options:
-          - best
-          - 1080
-          - 720
-          - 480
-          - 360
-      cookies:
-        description: '(Optional) Netscape cookies file (paste raw content)'
-        required: false
-        type: string
 
 jobs:
   download:
     runs-on: ubuntu-latest
     permissions:
-      contents: write          # needed to push commits
+      contents: write
 
     steps:
       - name: Checkout code
@@ -56,20 +41,14 @@ jobs:
           sleep 30
           curl -x socks5h://127.0.0.1:1080 https://cloudflare.com/cdn-cgi/trace -s || echo "WARP may not be ready, will try anyway"
 
-      - name: Save cookies (if provided)
-        if: ${{ github.event.inputs.cookies != '' }}
-        run: printf '%s\n' "${{ github.event.inputs.cookies }}" > cookies.txt
-
       - name: Clean previous downloads
         run: |
           rm -rf download/*
           echo "Download folder cleaned"
 
-      - name: Run downloader
+      - name: Run downloader (best quality, no cookies)
         env:
           VIDEO_URL: ${{ github.event.inputs.video_url }}
-          QUALITY: ${{ github.event.inputs.quality }}
-          COOKIES_FILE: ${{ github.event.inputs.cookies != '' && 'cookies.txt' || '' }}
           PROXY_ADDRESS: socks5://127.0.0.1:1080
         run: go run main.go
 
@@ -77,8 +56,8 @@ jobs:
         run: |
           cd download
           split -b 90M -d video.zip video.zip.
-          rm video.zip   # remove original after splitting
-          ls -la         # verify chunks
+          rm video.zip
+          ls -la
 
       - name: Commit chunks to repository
         run: |
