@@ -24,4 +24,5 @@ Then extract `video.zip`.
 <br>
 
 ---
-*No local tools required, everything runs on GitHub Actions.*
+<sub>*This project is for educational purposes only, please respect YouTube's Terms of Service.<br>
+No local tools required, everything runs on GitHub Actions.*<sub>
