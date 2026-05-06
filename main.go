@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 )
 
 func main() {
@@ -17,14 +16,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	quality := strings.ToLower(os.Getenv("QUALITY"))
-	formatStr := formatSelector(quality)
-	fmt.Printf("Quality: %s -> Format selector: %s\n", quality, formatStr)
+	// Always download the best possible quality
+	formatStr := "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
 
-	// Optional cookies file (if you ever need it)
-	cookiesFile := os.Getenv("COOKIES_FILE")
-
-	// Prepare yt-dlp arguments
+	// Build yt-dlp arguments
 	args := []string{
 		"--no-playlist",
 		"--extractor-args", "youtube:player_client=ios,android",
@@ -34,21 +29,18 @@ func main() {
 		"--no-mtime",
 	}
 
-	// Use SOCKS5 proxy if provided (e.g., WARP bypass)
+	// Use SOCKS5 proxy if provided (WARP bypass)
 	if proxyAddr := os.Getenv("PROXY_ADDRESS"); proxyAddr != "" {
 		args = append(args, "--proxy", proxyAddr)
 	}
 
-	if cookiesFile != "" {
-		args = append(args, "--cookies", cookiesFile)
-	}
 	args = append(args, videoURL)
 
 	cmd := exec.Command("yt-dlp", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	fmt.Println("Running yt-dlp...")
+	fmt.Println("Running yt-dlp (best quality)...")
 	if err := cmd.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "yt-dlp failed: %v\n", err)
 		os.Exit(1)
@@ -77,7 +69,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Zip the video inside the download folder
+	// Zip the video
 	zipPath := filepath.Join(downloadDir, "video.zip")
 	if err := createZip(zipPath, newPath); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create zip: %v\n", err)
@@ -85,43 +77,6 @@ func main() {
 	}
 
 	fmt.Printf("Successfully created: %s\n", zipPath)
-}
-
-// formatSelector builds a yt-dlp format string that tries the chosen
-// quality first, then 1080p, then 720p, then 480p, then 360p,
-// and finally falls back to the best available stream.
-// If "best" is chosen, the highest available quality is downloaded.
-func formatSelector(q string) string {
-	// "best" downloads the highest quality available
-	if q == "best" {
-		return "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
-	}
-
-	// For specific resolutions: build fallback chain
-	heights := []string{q, "1080", "720", "480", "360"}
-
-	// Deduplicate while preserving order
-	seen := make(map[string]bool)
-	unique := make([]string, 0, len(heights))
-	for _, h := range heights {
-		if !seen[h] {
-			seen[h] = true
-			unique = append(unique, h)
-		}
-	}
-
-	// Build fallback chain
-	var parts []string
-	for _, h := range unique {
-		parts = append(parts,
-			fmt.Sprintf("bestvideo[height<=%s][ext=mp4]+bestaudio[ext=m4a]", h))
-	}
-
-	// Final fallback
-	finalFallback := "best[ext=mp4]/best"
-	chain := append(parts, finalFallback)
-
-	return strings.Join(chain, "/")
 }
 
 // createZip creates a zip file at zipPath containing the file sourcePath.
