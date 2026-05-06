@@ -75,6 +75,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	os.Remove(newPath)
+
 	fmt.Printf("Successfully created: %s\n", zipPath)
 }
 
