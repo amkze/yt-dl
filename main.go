@@ -16,7 +16,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Always download the best possible quality
+	// Always download the best possible quality (video + audio)
 	formatStr := "bestvideo+bestaudio/best"
 
 	// Build yt-dlp arguments with robust flags
@@ -24,7 +24,7 @@ func main() {
 		"--no-playlist",
 		"-f", formatStr,
 		"--merge-output-format", "mp4",
-		"-o", "%(title).100s [%(id)s].%(ext)s",
+		"-o", "%(title)s.%(ext)s",                  // clean filename, no ID
 		"--no-mtime",
 		"--retries", "10",
 		"--fragment-retries", "10",
